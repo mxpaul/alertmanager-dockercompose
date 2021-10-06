@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.30.2
+    container_name: alerting_prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alerting_rules.yml:/etc/prometheus/alerting_rules.yml
+    ports:
+      - 9090
+    network_mode: "host"
+
+  grafana:
+    image: grafana/grafana:8.2.0-beta2
+    container_name: alerting_grafana
+    ports:
+      - 3000
+    network_mode: "host"
+
+  alertmanager:
+    image: prom/alertmanager:v0.23.0
+    container_name: alerting_alertmanager
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - 9093
+    network_mode: "host"
+
+  alertmanager-bot:
+    image: metalmatze/alertmanager-bot:0.4.3
+    command:
+    - --alertmanager.url=http://127.0.0.1:9093
+    - --log.level=info
+    - --store=bolt
+    - --bolt.path=/data/bot.db
+    volumes:
+    - ./botstorage:/data
+    environment:
+      TELEGRAM_ADMIN: ${TELEGRAM_ADMIN_ID_LIST}
+      TELEGRAM_TOKEN: ${TELEGRAM_BOT_TOKEN}
+    network_mode: "host"
+    ports:
+    - 8080:8080
+    restart: always
+
